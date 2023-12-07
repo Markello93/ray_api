@@ -14,12 +14,16 @@ class UserAdmin(auth_admin.UserAdmin):
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
         ('Личная информация', {'fields': ('first_name', 'last_name', 'birthday')}),
-        ('Разрешения', {'fields': ('is_active', 'is_staff', 'is_superuser', 'user_permissions')}),
+        (
+            'Разрешения',
+            {'fields': ('is_active', 'is_staff', 'is_superuser', 'user_permissions')},
+        ),
         ('Важные даты', {'fields': ('last_login', 'date_joined')}),
     )
     list_display = ['email', 'first_name', 'last_name', 'birthday']
     search_fields = ['email', 'last_name']
     list_filter = ['is_superuser']
     ordering = ('-date_joined',)
-    add_fieldsets = ((None, {'classes': ('wide',), 'fields': ('email', 'password1', 'password2')}),)
-
+    add_fieldsets = (
+        (None, {'classes': ('wide',), 'fields': ('email', 'password1', 'password2')}),
+    )

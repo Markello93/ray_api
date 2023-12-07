@@ -4,17 +4,23 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
             name='Comment',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
                 ('text', models.TextField(verbose_name='Текст комментария')),
                 ('created', models.DateTimeField(auto_now_add=True)),
             ],
@@ -27,25 +33,66 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Like',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
             name='PexelsImage',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
                 ('url', models.URLField(verbose_name='Ссылка на изображение')),
                 ('description', models.TextField(verbose_name='Описание изображения')),
-                ('photographer', models.CharField(max_length=255, verbose_name='Фотограф')),
+                (
+                    'photographer',
+                    models.CharField(max_length=255, verbose_name='Фотограф'),
+                ),
             ],
         ),
         migrations.CreateModel(
             name='Post',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
                 ('text', models.TextField(verbose_name='Текст поста')),
-                ('pub_date', models.DateTimeField(auto_now_add=True, verbose_name='Дата публикации')),
-                ('image', models.ImageField(blank=True, default='posts/noimage_detail.png', null=True, upload_to='', verbose_name='Изображение коллекции')),
+                (
+                    'pub_date',
+                    models.DateTimeField(
+                        auto_now_add=True, verbose_name='Дата публикации'
+                    ),
+                ),
+                (
+                    'image',
+                    models.ImageField(
+                        blank=True,
+                        default='posts/noimage_detail.png',
+                        null=True,
+                        upload_to='',
+                        verbose_name='Изображение коллекции',
+                    ),
+                ),
                 ('price', models.PositiveIntegerField()),
             ],
             options={

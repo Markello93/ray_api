@@ -2,10 +2,7 @@ from django.contrib import admin
 from django.utils.safestring import mark_safe
 
 from apps.posts.models import Comment, Like, Post
-
-# from import_export.admin import ImportExportModelAdmin
-
-from config.settings import ADMIN_EMPTY_VALUE_DISPLAY
+from ray_api.settings import ADMIN_EMPTY_VALUE_DISPLAY
 
 
 @admin.register(Post)
@@ -15,14 +12,23 @@ class PostAdmin(admin.ModelAdmin):
     list_display = (
         'pk',
         'text',
+        'theme',
         'pub_date',
         'author',
         'price',
         'preview',
     )
     list_editable = ('price',)
-    search_fields = ('author', 'price',)
-    list_filter = ('author', 'price',)
+    search_fields = (
+        'author',
+        'price',
+        'theme',
+    )
+    list_filter = (
+        'author',
+        'price',
+        'theme',
+    )
     ordering = ('pk',)
     empty_value_display = ADMIN_EMPTY_VALUE_DISPLAY
 
@@ -34,10 +40,11 @@ class PostAdmin(admin.ModelAdmin):
 
     preview.short_description = 'Изображение'
 
+
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
-    list_display = ['post', 'text', 'author', 'created']
-    search_fields = ['post', 'author', 'created']
+    list_display = ['pk', 'post', 'text', 'author', 'created']
+    search_fields = ['pk', 'post', 'author', 'created']
     ordering = ('post',)
     empty_value_display = ADMIN_EMPTY_VALUE_DISPLAY
 

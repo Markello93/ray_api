@@ -15,16 +15,29 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
-from django.conf.urls.static import static
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.routers import SimpleRouter
 
-from apps.posts.views import PostViewSet
+from apps.posts.views import CommentViewSet, PostViewSet, SearchImageView
 
 v1_router = SimpleRouter()
 v1_router.register('posts', PostViewSet, basename='posts')
+# v1_router.register('comments', CommentViewSet, basename='comments')
+# v1_router.register(
+#     r'posts/<int:post_id>/comments/',
+#     CommentViewSet,
+#     basename=r'comments',
+# )
+
+v1_router.register(
+    r'posts/(?P<post_id>\d+)/comments',
+    CommentViewSet,
+    basename=r'comments'
+)
+# v1_router.register('random_post', get_random_post, basename='random_post')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -32,6 +45,8 @@ urlpatterns = [
     path('api/schema/', SpectacularAPIView.as_view(), name='api-schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='api-schema'), name='api-docs'),
     path('auth/', include('djoser.urls')),
+    path('random_post/', SearchImageView.as_view(), name='random_post'),
+    path('posts/<int:post_id>/comments/', CommentViewSet.as_view({'get': 'list', 'post': 'create'}), name='post-comments'),
     path('', include(v1_router.urls))
 ]
 

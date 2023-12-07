@@ -10,13 +10,15 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 import os
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
-from dotenv import load_dotenv, find_dotenv
+
+from celery.schedules import crontab
+from dotenv import find_dotenv, load_dotenv
 
 load_dotenv(find_dotenv())
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-from celery.schedules import crontab
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -47,6 +49,7 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'djoser',
     'drf_spectacular',
+    'dbbackup',
     'apps.posts',
     'apps.users',
 ]
@@ -61,7 +64,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'config.urls'
+ROOT_URLCONF = 'ray_api.urls'
 
 TEMPLATES = [
     {
@@ -79,28 +82,16 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'config.wsgi.application'
-
-
-# Database
-# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-
+WSGI_APPLICATION = 'ray_api.wsgi.application'
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME"),
-        "USER": os.getenv("POSTGRES_USER"),
-        "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
-        "HOST": os.getenv("DB_HOST"),
-        "PORT": os.getenv("DB_PORT"),
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('POSTGRES_USER'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT'),
     }
 }
 # Password validation
@@ -121,7 +112,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-PASSWORD_HASHERS = ["django.contrib.auth.hashers.Argon2PasswordHasher"]
+PASSWORD_HASHERS = ['django.contrib.auth.hashers.Argon2PasswordHasher']
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
@@ -157,16 +148,16 @@ LOGIN_REDIRECT_URL = 'users:redirect'
 LOGIN_URL = 'account_login'
 
 REST_FRAMEWORK = {
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    "DEFAULT_RENDERER_CLASSES": [
-        "rest_framework.renderers.JSONRenderer",
-        "rest_framework.renderers.BrowsableAPIRenderer",
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
     ],
     'DEFAULT_FILTER_BACKENDS': [
         'rest_framework.filters.SearchFilter'
     ],
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
 
@@ -197,44 +188,40 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 # Celery
-# REDIS_HOST = os.getenv("REDIS_HOST")
-# REDIS_PORT = os.getenv("REDIS_PORT")
-REDIS_HOST="redis"
-REDIS_PORT="6379"
-REDIS_CACHE_LIFETIME = os.getenv("REDIS_CACHE_LIFETIME")
-REDIS_DB = os.getenv("REDIS_DB")
-CELERY_TIMEZONE = "Europe/Moscow"
-CELERY_BROKER_URL = "redis://" + REDIS_HOST + ":" + REDIS_PORT + "/0"
-CELERY_BROKER_TRANSPORT_OPTIONS = {"visibility_timeout": 360}
-CELERY_RESULT_BACKEND = "redis://" + REDIS_HOST + ":" + REDIS_PORT + "/0"
+REDIS_HOST = os.getenv('REDIS_HOST')
+REDIS_PORT = os.getenv('REDIS_PORT')
+REDIS_CACHE_LIFETIME = os.getenv('REDIS_CACHE_LIFETIME')
+REDIS_DB = os.getenv('REDIS_DB')
+CELERY_TIMEZONE = 'Europe/Moscow'
+CELERY_BROKER_URL = 'redis://' + REDIS_HOST + ':' + REDIS_PORT + '/0'
+CELERY_BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 360}
+CELERY_RESULT_BACKEND = 'redis://' + REDIS_HOST + ':' + REDIS_PORT + '/0'
 
-CELERY_ACCEPT_CONTENT = ["application/json"]
-CELERY_TASK_SERIALIZER = "json"
-CELERY_RESULT_SERIALIZER = "json"
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
 CELERY_REDIS_USE_SSL = False
 # CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+# CELERY_IMPORTS = ['apps.posts.tasks',]
 CELERY_BEAT_SCHEDULE = {
-    'create-backup-every-day': {
-        'task': 'app.tasks.create_database_backup',
-        'schedule': crontab(hour='0', minute='0'),
+    'create-backup-every-three-minutes': {
+        'task': 'apps.posts.tasks.create_database_backup',
+        'schedule': crontab(minute='0', hour='*/1'),
     },
 }
 CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/0",
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/0',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
         },
     }
 }
 
-#constants
 POST_STRING_SIZE = 300
 ADMIN_EMPTY_VALUE_DISPLAY = '--пусто--'
 
-
-#
 
 DJOSER = {
     'SERIALIZERS': {
@@ -244,3 +231,10 @@ DJOSER = {
     },
     'PASSWORD_RESET_CONFIRM_URL': 'http://127.0.0.1:8000/reset-password-confirm/',
 }
+
+
+DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
+DBBACKUP_STORAGE_OPTIONS = {'location': BASE_DIR / 'backups/'}
+db_name = os.getenv('DB_NAME')
+DBBACKUP_FILENAME_TEMPLATE = f"{db_name}_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
+DBBACKUP_CONNECTOR = 'dbbackup.db.postgresql.PgDumpBinaryConnector'

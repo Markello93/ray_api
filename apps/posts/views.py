@@ -1,26 +1,17 @@
-# import aiofiles
-# from django.http import HttpResponseRedirect
-# from django.shortcuts import render
-# from .forms import UploadFileForm
-#
-# async def handle_uploaded_file(f):
-#     async with aiofiles.open(f"uploads/{f.name}", "wb+") as destination:
-#         for chunk in f.chunks():
-#             await destination.write(chunk)
-#
-# async def async_uploader(request):
-#     if request.method == "POST":
-#         form = UploadFileForm(request.POST, request.FILES)
-#         if form.is_valid():
-#             await handle_uploaded_file(request.FILES["file"])
-#             return HttpResponseRedirect("/")
-#     else:
-#         form = UploadFileForm()
-#     return render(request, "upload.html", {"form": form})
+import asyncio
+import json
+
+import httpx
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from django.utils.decorators import method_decorator
+from django.views import View
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets
 
 from apps.posts.models import Post
-from apps.posts.serializers import PostSerializer
+from apps.posts.permissions import IsOwnerOrAdmin
+from apps.posts.serializers import CommentSerializer, PostSerializer, RandSerializer
 
 
 class PostViewSet(viewsets.ModelViewSet):
@@ -29,46 +20,51 @@ class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all().select_related('author')
     serializer_class = PostSerializer
 
-    # @action(detail=False)
-    # def popular(self, request, top=6):
-    #     """Возвращает топ популярных товаров."""
-    #     popular_products = (
-    #         Product.objects.annotate(total_quantity=Sum('order_products__quantity'))
-    #         .filter(total_quantity__gt=0)
-    #         .order_by('-total_quantity')[:top]
-    #     )
-    #     serializer = ShortProductSerializer(popular_products, many=True, context={'request': request})
-    #     return Response(serializer.data)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class SearchImageView(View):
+    async def post(self, request):
+        theme = json.loads(request.body).get('theme')
+
+        post_task = asyncio.create_task(self.get_post_from_db(theme))
+        pics_task = asyncio.create_task(self.get_pics_from_site(theme))
+
+        post, pics = await asyncio.gather(post_task, pics_task)
+
+        serializer_data = {'post': PostSerializer(post).data, 'related_photo': pics}
+
+        serializer = RandSerializer(data=serializer_data)
+        if serializer.is_valid():
+            return JsonResponse(serializer.data)
+        else:
+            return JsonResponse(serializer.errors, status=400)
+
+    async def get_post_from_db(self, car_type):
+        post = await Post.objects.filter(theme=car_type).alast()
+        return post
+
+    async def get_pics_from_site(self, car_type):
+        url = 'https://api.pexels.com/v1/search'
+        params = {'query': car_type, 'page': '1', 'per_page': '10'}
+        headers = {
+            'Authorization': 'jgkXduK1KgvFLzVMyC99qzdMsuKq6VFAeOhAZqhZVh3PYx0ZTbMOUFV0'
+        }
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, params=params, headers=headers)
+            if response.status_code == 200:
+                return [pic['src']['original'] for pic in response.json().get('photos')]
+            else:
+                return None
 
 
+class CommentViewSet(viewsets.ModelViewSet):
+    serializer_class = CommentSerializer
+    permission_classes = (IsOwnerOrAdmin,)
 
-#
-# class ReviewViewSet(viewsets.ModelViewSet):
-#     permission_classes = (AdminModeratorAuthorOrReadOnly,)
-#     serializer_class = ReviewSerializer
-#     pagination_class = LimitOffsetPagination
-#
-#     def perform_create(self, serializer):
-#         title = get_object_or_404(Title, id=self.kwargs.get("title_id"))
-#         serializer.save(author=self.request.user, title=title)
-#
-#     def get_queryset(self):
-#         title_id = self.kwargs.get("title_id")
-#         title = get_object_or_404(Title, id=title_id)
-#         return title.reviews.all()
-#
-#
-# class CommentViewSet(viewsets.ModelViewSet):
-#     serializer_class = CommentSerializer
-#     permission_classes = (AdminModeratorAuthorOrReadOnly,)
-#
-#     def get_queryset(self):
-#         review = get_object_or_404(Review, pk=self.kwargs.get("review_id"))
-#         return review.comments.all()
-#
-#     def perform_create(self, serializer):
-#         review = get_object_or_404(Review, pk=self.kwargs.get("review_id"))
-#         serializer.save(author=self.request.user, review=review)
-#
-#
-# async def test_view(request,cars,):
+    def get_queryset(self):
+        post = get_object_or_404(Post, pk=self.kwargs.get('post_id'))
+        return post.comments.all()
+
+    def perform_create(self, serializer):
+        post = get_object_or_404(Post, pk=self.kwargs.get('post_id'))
+        serializer.save(author=self.request.user, post=post)

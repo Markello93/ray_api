@@ -13,8 +13,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     """Настраиваемая модель пользователя."""
 
     email = EmailField('Email', unique=True)
-    phone = CharField('Телефон', max_length=30,
-                      blank=True, null=True)
+    phone = CharField('Телефон', max_length=30, blank=True, null=True)
     first_name = CharField('Имя', max_length=30, blank=True, null=True)
     last_name = CharField('Фамилия', max_length=50, blank=True, null=True)
     birthday = DateField('День рождения', blank=True, null=True)
