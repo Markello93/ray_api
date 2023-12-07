@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "ray"
+version = "0.1.0"
+description = ""
+authors = ["Марк Крылов <mark.krylov93@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "3.10"
+django = "4.2.8"
+redis = "^5.0.1"
+djangorestframework = "^3.14.0"
+celery = "^5.3.6"
+python-dotenv = "^1.0.0"
+djoser = "^2.2.2"
+django-redis = "^5.4.0"
+pillow = "^10.1.0"
+drf-spectacular = "^0.26.5"
+django-celery-beat = "^2.5.0"
+argon2-cffi = "^23.1.0"
+django-import-export = "^3.3.3"
+aiohttp = "^3.9.1"
+drf-extra-fields = "^3.7.0"
+psycopg2 = "^2.9.9"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
