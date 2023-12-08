@@ -15,18 +15,14 @@ class PostAdmin(admin.ModelAdmin):
         'theme',
         'pub_date',
         'author',
-        'price',
         'preview',
     )
-    list_editable = ('price',)
     search_fields = (
         'author',
-        'price',
         'theme',
     )
     list_filter = (
         'author',
-        'price',
         'theme',
     )
     ordering = ('pk',)

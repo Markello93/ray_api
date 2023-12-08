@@ -46,12 +46,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
+    'rest_framework_simplejwt',
     'django_celery_beat',
     'djoser',
     'drf_spectacular',
     'dbbackup',
     'apps.posts',
     'apps.users',
+    'adrf',
 ]
 
 MIDDLEWARE = [
@@ -158,9 +160,13 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
+    )
 }
-
+# 'DEFAULT_AUTHENTICATION_CLASSES': [
+#     'rest_framework.authentication.TokenAuthentication',
+#     'rest_framework.authentication.BasicAuthentication',
+#     'rest_framework.authentication.SessionAuthentication',
+# ]
 # SIMPLE_JWT = {
 #     "ACCESS_TOKEN_LIFETIME": timedelta(days=10),
 #     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
@@ -183,14 +189,12 @@ REST_FRAMEWORK = {
 #     "SLIDING_TOKEN_REFRESH_LIFETIME": timedelta(days=1),
 # }
 SIMPLE_JWT = {
-    # Устанавливаем срок жизни токена
     'ACCESS_TOKEN_LIFETIME': timedelta(days=100),
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 # Celery
 REDIS_HOST = os.getenv('REDIS_HOST')
 REDIS_PORT = os.getenv('REDIS_PORT')
-REDIS_CACHE_LIFETIME = os.getenv('REDIS_CACHE_LIFETIME')
 REDIS_DB = os.getenv('REDIS_DB')
 CELERY_TIMEZONE = 'Europe/Moscow'
 CELERY_BROKER_URL = 'redis://' + REDIS_HOST + ':' + REDIS_PORT + '/0'
@@ -201,8 +205,6 @@ CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_REDIS_USE_SSL = False
-# CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
-# CELERY_IMPORTS = ['apps.posts.tasks',]
 CELERY_BEAT_SCHEDULE = {
     'create-backup-every-three-minutes': {
         'task': 'apps.posts.tasks.create_database_backup',
@@ -212,7 +214,7 @@ CELERY_BEAT_SCHEDULE = {
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/0',
+        'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/1',
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
         },
@@ -223,18 +225,13 @@ POST_STRING_SIZE = 300
 ADMIN_EMPTY_VALUE_DISPLAY = '--пусто--'
 
 
-DJOSER = {
-    'SERIALIZERS': {
-        'user': 'apps.users.serializers.UserSerializer',
-        'current_user': 'apps.users.serializers.UserSerializer',
-        'user_create': 'apps.users.serializers.UserSerializer',
-    },
-    'PASSWORD_RESET_CONFIRM_URL': 'http://127.0.0.1:8000/reset-password-confirm/',
-}
-
-
 DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
 DBBACKUP_STORAGE_OPTIONS = {'location': BASE_DIR / 'backups/'}
 db_name = os.getenv('DB_NAME')
 DBBACKUP_FILENAME_TEMPLATE = f"{db_name}_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
 DBBACKUP_CONNECTOR = 'dbbackup.db.postgresql.PgDumpBinaryConnector'
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Ray_blog_api',
+    'DESCRIPTION': 'Api enpoint documentation for Ray testcase',
+    'VERSION': '1.0.0'
+}

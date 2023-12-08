@@ -1,4 +1,5 @@
 """Сериализаторы для приложения product."""
+# from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
 from apps.posts.models import Comment, Like, Post
@@ -16,22 +17,18 @@ class LikeSerializer(serializers.ModelSerializer):
 
 
 class PostSerializer(serializers.ModelSerializer):
-    text = serializers.CharField()
-    pub_date = serializers.DateTimeField()
-    price = serializers.IntegerField()
-    id = serializers.IntegerField()
 
     class Meta:
         model = Post
         fields = (
             'id',
             'text',
+            'theme',
             'pub_date',
             'author',
             'image',
-            'price',
         )
-        read_only_fields = fields
+        read_only_fields = ('id', 'pub_date', 'author')
 
 
 class RandSerializer(serializers.Serializer):

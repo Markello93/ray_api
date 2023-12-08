@@ -40,7 +40,6 @@ class Post(models.Model):
         blank=True,
         null=True,
     )
-    price = models.PositiveIntegerField()
 
     class Meta:
         ordering = ('-pub_date',)

@@ -2,27 +2,102 @@ import asyncio
 import json
 
 import httpx
+from adrf.views import APIView
+from django.core.cache import cache
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
-from django.views import View
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework import viewsets
+from drf_spectacular.utils import extend_schema
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
 
-from apps.posts.models import Post
-from apps.posts.permissions import IsOwnerOrAdmin
+from apps.posts.models import Like, Post
 from apps.posts.serializers import CommentSerializer, PostSerializer, RandSerializer
 
 
+@extend_schema(
+    tags=['Posts'],
+    description='Endpoints for managing posts.',
+    methods=['get', 'post', 'patch', 'delete']
+)
 class PostViewSet(viewsets.ModelViewSet):
-    """Вьюсет для товаров."""
-
     queryset = Post.objects.all().select_related('author')
     serializer_class = PostSerializer
+    permission_classes = [AllowAny]
+
+    def get_permissions(self):
+        if self.action == 'create':
+            self.permission_classes = [IsAuthenticated]
+        return super().get_permissions()
+
+    def list(self, request, *args, **kwargs):
+        cached_posts = cache.get('cached_posts')
+        if cached_posts:
+            return Response(cached_posts)
+        posts = self.get_queryset()
+        serializer = self.get_serializer(posts, many=True)
+        cache.set('cached_posts', serializer.data, 60 * 60)
+        return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        Post.objects.create(
+            author=request.user,
+            text=request.data.get('text'),
+            theme=request.data.get('theme'),
+            image=request.data.get('image')
+        )
+        cache.delete('cached_posts')
+        return Response({'message': 'Post created succesfully'}, status=status.HTTP_201_CREATED)
+
+    def destroy(self, request, *args, **kwargs):
+        response = super().destroy(request, *args, **kwargs)
+        cache.delete('cached_posts')
+        return response
+
+    @action(
+        detail=True,
+        methods=['post', 'delete'],
+        permission_classes=[IsAuthenticated]
+    )
+    def likes(self, request, pk):
+        post = get_object_or_404(Post, pk=pk)
+        like, created = Like.objects.get_or_create(user=request.user, post=post)
+
+        if request.method == 'POST':
+            if not created:
+                return Response({'message': 'You already rate this post'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            cache.delete(
+                f'liked_users_{pk}')
+            return Response(status=status.HTTP_201_CREATED)
+        cache.delete(f'liked_users_{pk}')
+        like.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=['get'], permission_classes=[AllowAny])
+    def liked_by(self, request, pk):
+        cached_data = cache.get(f'liked_users_{pk}')
+        if cached_data:
+            return Response(cached_data)
+        post = get_object_or_404(Post, pk=pk)
+        liked_users = post.like_set.select_related('user').values_list('user__email', flat=True)
+        cache.set(f'liked_users_{pk}', liked_users, 60 * 60)
+        return Response(liked_users)
 
 
+@extend_schema(
+    tags=['Posts'],
+    description='Endpoint for recieve post and related pics',
+    methods=['post']
+)
 @method_decorator(csrf_exempt, name='dispatch')
-class SearchImageView(View):
+class SearchImageView(APIView):
+    serializer_class = RandSerializer
+
     async def post(self, request):
         theme = json.loads(request.body).get('theme')
 
@@ -59,7 +134,7 @@ class SearchImageView(View):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    permission_classes = (IsOwnerOrAdmin,)
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         post = get_object_or_404(Post, pk=self.kwargs.get('post_id'))
