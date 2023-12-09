@@ -201,6 +201,6 @@ DBBACKUP_FILENAME_TEMPLATE = f"{db_name}_{datetime.now().strftime('%Y-%m-%d_%H-%
 DBBACKUP_CONNECTOR = 'dbbackup.db.postgresql.PgDumpBinaryConnector'
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Ray_blog_api',
-    'DESCRIPTION': 'Api enpoint documentation for Ray testcase',
+    'DESCRIPTION': 'Api endpoint documentation for Ray testcase',
     'VERSION': '1.0.0'
 }
