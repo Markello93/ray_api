@@ -28,6 +28,8 @@ from apps.posts.serializers import (
     methods=['get', 'post', 'patch', 'delete'],
 )
 class PostViewSet(viewsets.ModelViewSet):
+    """ViewSet for Post model, allow CRUD operations with posts, and create/delete
+    likes for posts."""
     queryset = Post.objects.all().select_related('author')
     serializer_class = PostSerializer
     permission_classes = [AllowAny]
@@ -127,6 +129,7 @@ class PostViewSet(viewsets.ModelViewSet):
 )
 @method_decorator(csrf_exempt, name='dispatch')
 class SearchImageView(APIView):
+    """View for making request to API and get last post from DB."""
     serializer_class = RandSerializer
 
     async def post(self, request):
@@ -171,6 +174,7 @@ class SearchImageView(APIView):
     methods=['get', 'post', 'patch', 'delete'],
 )
 class CommentViewSet(viewsets.ModelViewSet):
+    """ViewSet for Comment model, allow CRUD operations with comments."""
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticated]
 

@@ -1,12 +1,10 @@
-"""Сериализаторы для приложения product."""
-# from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
 from apps.posts.models import Comment, Like, Post
 
 
 class LikeSerializer(serializers.ModelSerializer):
-    """Сериалайзер для модели Like."""
+    """Serializer for the Like model."""
 
     class Meta:
         model = Like
@@ -37,7 +35,7 @@ class RandSerializer(serializers.Serializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    """Сериалайзер для модели Comment."""
+    """Serializer for the Comment model."""
 
     author = serializers.SlugRelatedField(
         read_only=True,

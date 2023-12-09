@@ -10,7 +10,7 @@ from apps.users.managers import UserManager
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    """Настраиваемая модель пользователя."""
+    """Custom user model"""
 
     email = EmailField('Email', unique=True)
     phone = CharField('Телефон', max_length=30, blank=True, null=True)

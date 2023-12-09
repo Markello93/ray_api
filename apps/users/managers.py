@@ -2,7 +2,7 @@ from django.contrib.auth.models import UserManager as DjangoUserManager
 
 
 class UserManager(DjangoUserManager):
-    """Индивидуальная модель пользователя."""
+    """UserManager for improve user model."""
 
     def _create_user(self, email: str, password: str | None, **extra_fields):
         """Creating user with email."""

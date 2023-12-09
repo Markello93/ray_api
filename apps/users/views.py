@@ -15,6 +15,8 @@ User = get_user_model()
 
 
 class UserViewSet(viewsets.ModelViewSet):
+    """ViewSet for User model, allow changing user profile, and create/delete
+    users."""
     queryset = User.objects.all()
     permission_classes = (AllowAny,)
     lookup_field = 'email'
@@ -37,7 +39,7 @@ class UserViewSet(viewsets.ModelViewSet):
     def me(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return Response(
-                {'message': 'Вам необходимо зарегистрироваться, чтобы просматривать свой профиль'},
+                {'message': 'You must register to view your profile.'},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
         user = request.user

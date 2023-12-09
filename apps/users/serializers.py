@@ -45,7 +45,7 @@ class UserSerializer(serializers.ModelSerializer):
             instance.save()
             return instance
         raise serializers.ValidationError(
-            'Вы не имеете права изменять эту учетную запись.'
+            'You are not allowed to change this account'
         )
 
     def destroy(self, instance):
@@ -54,7 +54,7 @@ class UserSerializer(serializers.ModelSerializer):
         if instance == self.context['request'].user:
             instance.delete()
         raise serializers.ValidationError(
-            'Вы не имеете права удалять эту учетную запись.'
+            'You do not have the right to delete this account'
         )
 
     class Meta:

@@ -8,9 +8,8 @@ User = get_user_model()
 
 
 class Post(models.Model):
-    """Класс Post используется для задания
-    параметров отображения постов на сайте.
-    """
+    """The Post model is used to set parameters for displaying posts on the
+    site."""
 
     CARS = [
         ('bmw', 'bmw'),
@@ -43,17 +42,15 @@ class Post(models.Model):
 
     class Meta:
         ordering = ('-pub_date',)
-        verbose_name = 'Пост'
-        verbose_name_plural = 'Посты'
+        verbose_name = 'Post'
+        verbose_name_plural = 'Posts'
 
     def __str__(self):
         return self.text[:POST_STRING_SIZE]
 
 
 class Comment(models.Model):
-    """Класс Comment определяет ключевые
-    параметры комментариев к постам.
-    """
+    """The Comment model defines the key Post comment options."""
 
     post = models.ForeignKey(
         Post,
@@ -72,8 +69,8 @@ class Comment(models.Model):
 
     class Meta:
         ordering = ('-created',)
-        verbose_name = 'Комментарий'
-        verbose_name_plural = 'Комментарии'
+        verbose_name = 'Comment'
+        verbose_name_plural = 'Comments'
 
     def __str__(self):
         return self.text[:POST_STRING_SIZE]
@@ -85,36 +82,3 @@ class Like(models.Model):
 
     class Meta:
         constraints = [UniqueConstraint(fields=['user', 'post'], name='unique_like')]
-
-
-# class PexelsImage(models.Model):
-#     url = models.URLField(verbose_name='Ссылка на изображение')
-#     description = models.TextField(verbose_name='Описание изображения')
-#     photographer = models.CharField(max_length=255, verbose_name='Фотограф')
-#
-#     def __str__(self):
-#         return self.description
-
-
-# class Like(models.Model):
-#     """Класс Follow определяет ключевые
-#     параметры системы подписки на авторов.
-#     """
-#
-#     user = models.ForeignKey(
-#         User,
-#         verbose_name='Имя подписчика',
-#         on_delete=models.CASCADE,
-#         related_name='follower',
-#     )
-#     post = models.ForeignKey(
-#         Post,
-#         verbose_name='Имя автора',
-#         on_delete=models.CASCADE,
-#         related_name='following',
-#     )
-#
-#     class Meta:
-#         UniqueConstraint(name='unique_following', fields=['user', 'post'])
-#         verbose_name = 'Подписка'
-#         verbose_name_plural = 'Подписки'
