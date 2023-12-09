@@ -32,7 +32,7 @@ SECRET_KEY = 'django-insecure-u7)dyf0^_(-ns+jgg&fpm7q$vq2mh1=@j-ttj*c15gu=mo5@#a
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = bool(os.getenv('DEBUG'))
 
-ALLOWED_HOSTS = ['localhost', '0.0.0.0']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 
 # Application definition
@@ -154,9 +154,6 @@ REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
-    ],
-    'DEFAULT_FILTER_BACKENDS': [
-        'rest_framework.filters.SearchFilter'
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',

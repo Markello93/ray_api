@@ -15,13 +15,17 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from apps.posts.models import Like, Post
-from apps.posts.serializers import CommentSerializer, PostSerializer, RandSerializer
+from apps.posts.serializers import (
+    CommentSerializer,
+    LikedSerializer,
+    PostSerializer,
+    RandSerializer,
+)
 
 
 @extend_schema(
-    tags=['Posts'],
     description='Endpoints for managing posts.',
-    methods=['get', 'post', 'patch', 'delete']
+    methods=['get', 'post', 'patch', 'delete'],
 )
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all().select_related('author')
@@ -50,13 +54,30 @@ class PostViewSet(viewsets.ModelViewSet):
             image=request.data.get('image')
         )
         cache.delete('cached_posts')
-        return Response({'message': 'Post created succesfully'}, status=status.HTTP_201_CREATED)
+        return Response({'message': 'Post created succesfully'},
+                        status=status.HTTP_201_CREATED)
 
     def destroy(self, request, *args, **kwargs):
         response = super().destroy(request, *args, **kwargs)
         cache.delete('cached_posts')
         return response
 
+    @extend_schema(
+        description='Endpoint for creating likes on a post.',
+        methods=['post'],
+        request=PostSerializer,
+        responses={
+            201: {'description': 'Post liked successfully'},
+            400: {'description': 'You already rate this post'},
+        }
+    )
+    @extend_schema(
+        description='Endpoint for deleting likes on a post.',
+        methods=['delete'],
+        responses={
+            204: {'description': 'Post like removed'},
+        }
+    )
     @action(
         detail=True,
         methods=['post', 'delete'],
@@ -64,7 +85,8 @@ class PostViewSet(viewsets.ModelViewSet):
     )
     def likes(self, request, pk):
         post = get_object_or_404(Post, pk=pk)
-        like, created = Like.objects.get_or_create(user=request.user, post=post)
+        like, created = Like.objects.get_or_create(user=request.user,
+                                                   post=post)
 
         if request.method == 'POST':
             if not created:
@@ -78,20 +100,29 @@ class PostViewSet(viewsets.ModelViewSet):
         like.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    @extend_schema(
+        description='Endpoint for fetching users who liked a post.',
+        methods=['get'],
+        responses={
+            200: LikedSerializer,
+        }
+    )
     @action(detail=True, methods=['get'], permission_classes=[AllowAny])
     def liked_by(self, request, pk):
         cached_data = cache.get(f'liked_users_{pk}')
         if cached_data:
             return Response(cached_data)
         post = get_object_or_404(Post, pk=pk)
-        liked_users = post.like_set.select_related('user').values_list('user__email', flat=True)
+        liked_users = post.like_set.select_related('user').values_list(
+            'user__email', flat=True)
+        serializer = LikedSerializer(liked_users, many=True)
         cache.set(f'liked_users_{pk}', liked_users, 60 * 60)
-        return Response(liked_users)
+        return Response(serializer.data)
 
 
 @extend_schema(
-    tags=['Posts'],
-    description='Endpoint for recieve post and related pics',
+    tags=['posts'],
+    description='Endpoint for receive post and related pics',
     methods=['post']
 )
 @method_decorator(csrf_exempt, name='dispatch')
@@ -106,7 +137,8 @@ class SearchImageView(APIView):
 
         post, pics = await asyncio.gather(post_task, pics_task)
 
-        serializer_data = {'post': PostSerializer(post).data, 'related_photo': pics}
+        serializer_data = {'post': PostSerializer(post).data,
+                           'related_photo': pics}
 
         serializer = RandSerializer(data=serializer_data)
         if serializer.is_valid():
@@ -127,11 +159,17 @@ class SearchImageView(APIView):
         async with httpx.AsyncClient() as client:
             response = await client.get(url, params=params, headers=headers)
             if response.status_code == 200:
-                return [pic['src']['original'] for pic in response.json().get('photos')]
+                return [pic['src']['original'] for pic in
+                        response.json().get('photos')]
             else:
                 return None
 
 
+@extend_schema(
+    tags=['comments'],
+    description='Endpoints for managing posts.',
+    methods=['get', 'post', 'patch', 'delete'],
+)
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticated]

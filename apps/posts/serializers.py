@@ -49,3 +49,9 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = ('id', 'text', 'author', 'created')
         model = Comment
         read_only_fields = ('post',)
+
+
+class LikedSerializer(serializers.Serializer):
+    emails = serializers.ListField(
+        child=serializers.EmailField()
+    )
