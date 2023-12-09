@@ -9,6 +9,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating user."""
 
     email = serializers.EmailField(required=True)
+    password = serializers.CharField(write_only=True, required=True)
     first_name = serializers.CharField(required=False)
     last_name = serializers.CharField(required=False)
 

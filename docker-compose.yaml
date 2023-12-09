@@ -7,16 +7,10 @@ services:
     restart: on-failure
     volumes:
       - postgres_data:/var/lib/postgresql/data/
-    ports:
-      - 5435:5432
     env_file:
       - .env
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready", "-U", "${POSTGRES_USER}", "-d","postgres-rest" ]
-      interval: 10s
-      timeout: 30s
-      retries: 5
-      start_period: 80s
+    networks:
+      - postgresnet
 
   redis:
     image: redis:latest
@@ -28,6 +22,8 @@ services:
       - "6379"
     ports:
       - "6379:6379"
+    networks:
+      - webnet
     env_file:
       - .env
     healthcheck:
@@ -42,8 +38,8 @@ services:
       dockerfile: Dockerfile
     container_name: ray_api
     depends_on:
-       postgres:
-         condition: service_healthy
+      #  postgres
+        #  condition: service_healthy
        redis:
          condition: service_healthy
     env_file:
@@ -51,18 +47,27 @@ services:
     volumes:
       - .:/app
     restart: always
-    tty: true
+    # tty: true
     ports:
       - "8000:8000"
-    command: >
-      sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    networks:
+      - postgresnet
+      - webnet
+    command: /start
 
   celery:
     build: .
     command: celery -A ray_api worker -l info -P solo
+    volumes:
+      - ./backups/:/app/backups
     depends_on:
       - ray_api
       - redis
+    env_file:
+      - .env
+    networks:
+      - postgresnet
+      - webnet
   celery_beat:
     build: .
     volumes:
@@ -71,6 +76,16 @@ services:
     depends_on:
       - ray_api
       - redis
+    env_file:
+      - .env
+    networks:
+      - postgresnet
+      - webnet
+
+networks:
+  postgresnet:
+  webnet:
+
 volumes:
   postgres_data:
   redis_data:

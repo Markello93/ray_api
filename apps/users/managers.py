@@ -1,5 +1,4 @@
 from django.contrib.auth.models import UserManager as DjangoUserManager
-from django.utils.crypto import get_random_string
 
 
 class UserManager(DjangoUserManager):
@@ -10,8 +9,8 @@ class UserManager(DjangoUserManager):
 
         if not email:
             raise ValueError('Необходим email.')
-        if password is None:
-            password = get_random_string(length=12)
+        if not password:
+            raise ValueError('Необходим password.')
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)

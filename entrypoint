@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+readonly cmd="$*"
+
+: "${DB_HOST:=postrges}"
+: "${DB_PORT:=5432}"
+
+wait-for-it \
+  --host="$DB_HOST" \
+  --port="$DB_PORT" \
+  --timeout=90 \
+  --strict
+
+
+echo "Postgres ${DB_HOST}:${DB_PORT} is up"
+
+exec $cmd

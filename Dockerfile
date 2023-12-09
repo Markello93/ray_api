@@ -1,29 +1,28 @@
 FROM python:3.10-slim
 
 ENV PYTHONFAULTHANDLER=1 \
-    PYTHONUNBUFFERED=1
+  PYTHONUNBUFFERED=1 \
+  PYTHONHASHSEED=random \
+  PYTHONDONTWRITEBYTECODE=1 \
+  POETRY_VERSION=1.6.1 \
+  POETRY_NO_INTERACTION=1 \
+  POETRY_VIRTUALENVS_CREATE=false \
+  POETRY_CACHE_DIR='/var/cache/pypoetry' \
+  POETRY_HOME='/usr/local'
 
 RUN apt-get update -qq \
     && DEBIAN_FRONTEND=noninteractive apt-get install -yq --no-install-recommends \
-        apt-transport-https \
-        apt-transport-https \
         build-essential \
-        ca-certificates \
         curl \
-        git \
-        gnupg \
-        locales\
-        libpq-dev
+        wait-for-it \
+        libpq-dev \
+    postgresql-client \
+  && curl -sSL 'https://install.python-poetry.org' | python - \
+  && poetry --version \
+  # Cleaning cache:
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+  && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
-
-RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
-    locale-gen
-
-RUN curl -sSL https://install.python-poetry.org | python3 -
-
-ENV PATH $PATH:/root/.local/bin
-
-RUN poetry config virtualenvs.create false
 
 RUN mkdir -p /app
 WORKDIR /app
@@ -31,8 +30,14 @@ WORKDIR /app
 COPY pyproject.toml poetry.lock ./
 RUN poetry install --no-interaction --no-ansi
 
+COPY ./entrypoint /entrypoint
+RUN sed -i 's/\r$//g' /entrypoint
+RUN chmod +x /entrypoint
+
+COPY ./start /start
+RUN sed -i 's/\r$//g' /start
+RUN chmod +x /start
 
 ADD .. /app
 
-
-EXPOSE 8000/tcp
+ENTRYPOINT ["/entrypoint"]
