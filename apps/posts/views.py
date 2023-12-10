@@ -3,6 +3,7 @@ import json
 
 import httpx
 from adrf.views import APIView
+from asgiref.sync import sync_to_async
 from django.core.cache import cache
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
@@ -17,9 +18,11 @@ from rest_framework.response import Response
 from apps.posts.models import Like, Post
 from apps.posts.serializers import (
     CommentSerializer,
+    LastPostSerializer,
     LikedSerializer,
     PostSerializer,
     RandSerializer,
+    RespAPIPostSerializer,
 )
 
 
@@ -30,6 +33,7 @@ from apps.posts.serializers import (
 class PostViewSet(viewsets.ModelViewSet):
     """ViewSet for Post model, allow CRUD operations with posts, and create/delete
     likes for posts."""
+
     queryset = Post.objects.all().select_related('author')
     serializer_class = PostSerializer
     permission_classes = [AllowAny]
@@ -53,16 +57,12 @@ class PostViewSet(viewsets.ModelViewSet):
             author=request.user,
             text=request.data.get('text'),
             theme=request.data.get('theme'),
-            image=request.data.get('image')
+            image=request.data.get('image'),
         )
         cache.delete('cached_posts')
-        return Response({'message': 'Post created succesfully'},
-                        status=status.HTTP_201_CREATED)
-
-    def destroy(self, request, *args, **kwargs):
-        response = super().destroy(request, *args, **kwargs)
-        cache.delete('cached_posts')
-        return response
+        return Response(
+            {'message': 'Post created succesfully'}, status=status.HTTP_201_CREATED
+        )
 
     @extend_schema(
         description='Endpoint for creating likes on a post.',
@@ -71,32 +71,30 @@ class PostViewSet(viewsets.ModelViewSet):
         responses={
             201: {'description': 'Post liked successfully'},
             400: {'description': 'You already rate this post'},
-        }
+        },
     )
     @extend_schema(
         description='Endpoint for deleting likes on a post.',
         methods=['delete'],
         responses={
             204: {'description': 'Post like removed'},
-        }
+        },
     )
     @action(
-        detail=True,
-        methods=['post', 'delete'],
-        permission_classes=[IsAuthenticated]
+        detail=True, methods=['post', 'delete'], permission_classes=[IsAuthenticated]
     )
     def likes(self, request, pk):
         post = get_object_or_404(Post, pk=pk)
-        like, created = Like.objects.get_or_create(user=request.user,
-                                                   post=post)
+        like, created = Like.objects.get_or_create(user=request.user, post=post)
 
         if request.method == 'POST':
             if not created:
-                return Response({'message': 'You already rate this post'},
-                                status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {'message': 'You already rate this post'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-            cache.delete(
-                f'liked_users_{pk}')
+            cache.delete(f'liked_users_{pk}')
             return Response(status=status.HTTP_201_CREATED)
         cache.delete(f'liked_users_{pk}')
         like.delete()
@@ -107,7 +105,7 @@ class PostViewSet(viewsets.ModelViewSet):
         methods=['get'],
         responses={
             200: LikedSerializer,
-        }
+        },
     )
     @action(detail=True, methods=['get'], permission_classes=[AllowAny])
     def liked_by(self, request, pk):
@@ -116,7 +114,8 @@ class PostViewSet(viewsets.ModelViewSet):
             return Response(cached_data)
         post = get_object_or_404(Post, pk=pk)
         liked_users = post.like_set.select_related('user').values_list(
-            'user__email', flat=True)
+            'user__email', flat=True
+        )
         serializer = LikedSerializer(liked_users, many=True)
         cache.set(f'liked_users_{pk}', liked_users, 60 * 60)
         return Response(serializer.data)
@@ -125,11 +124,14 @@ class PostViewSet(viewsets.ModelViewSet):
 @extend_schema(
     tags=['posts'],
     description='Endpoint for receive post and related pics',
-    methods=['post']
+    methods=['post'],
+    request=LastPostSerializer(),
+    responses=RandSerializer(),
 )
 @method_decorator(csrf_exempt, name='dispatch')
 class SearchImageView(APIView):
     """View for making request to API and get last post from DB."""
+
     serializer_class = RandSerializer
 
     async def post(self, request):
@@ -139,9 +141,10 @@ class SearchImageView(APIView):
         pics_task = asyncio.create_task(self.get_pics_from_site(theme))
 
         post, pics = await asyncio.gather(post_task, pics_task)
-
-        serializer_data = {'post': PostSerializer(post).data,
-                           'related_photo': pics}
+        serializer_data = {
+            'post': RespAPIPostSerializer(post).data,
+            'related_photo': pics,
+        }
 
         serializer = RandSerializer(data=serializer_data)
         if serializer.is_valid():
@@ -149,8 +152,9 @@ class SearchImageView(APIView):
         else:
             return JsonResponse(serializer.errors, status=400)
 
-    async def get_post_from_db(self, car_type):
-        post = await Post.objects.filter(theme=car_type).alast()
+    @sync_to_async
+    def get_post_from_db(self, car_type):
+        post = Post.objects.filter(theme=car_type).latest('pub_date')
         return post
 
     async def get_pics_from_site(self, car_type):
@@ -162,8 +166,7 @@ class SearchImageView(APIView):
         async with httpx.AsyncClient() as client:
             response = await client.get(url, params=params, headers=headers)
             if response.status_code == 200:
-                return [pic['src']['original'] for pic in
-                        response.json().get('photos')]
+                return [pic['src']['original'] for pic in response.json().get('photos')]
             else:
                 return None
 
@@ -175,6 +178,7 @@ class SearchImageView(APIView):
 )
 class CommentViewSet(viewsets.ModelViewSet):
     """ViewSet for Comment model, allow CRUD operations with comments."""
+
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticated]
 

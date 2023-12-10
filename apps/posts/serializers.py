@@ -15,6 +15,7 @@ class LikeSerializer(serializers.ModelSerializer):
 
 
 class PostSerializer(serializers.ModelSerializer):
+    # image = serializers.CharField()
 
     class Meta:
         model = Post
@@ -29,9 +30,13 @@ class PostSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'pub_date', 'author')
 
 
-class RandSerializer(serializers.Serializer):
-    post = PostSerializer()
-    related_photo = serializers.ListField(child=serializers.URLField())
+class RespAPIPostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        fields = (
+            'text',
+            'theme',
+        )
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -50,6 +55,13 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class LikedSerializer(serializers.Serializer):
-    emails = serializers.ListField(
-        child=serializers.EmailField()
-    )
+    emails = serializers.ListField(child=serializers.EmailField())
+
+
+class LastPostSerializer(serializers.Serializer):
+    theme = serializers.ChoiceField(choices=Post.CARS, required=True)
+
+
+class RandSerializer(serializers.Serializer):
+    post = RespAPIPostSerializer()
+    related_photo = serializers.ListField(child=serializers.URLField())

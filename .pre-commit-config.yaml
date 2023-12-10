@@ -25,5 +25,5 @@ repos:
     rev: 6.0.0
     hooks:
     -   id: flake8
-        exclude: '__init__.py|migrations|backups/'
+        exclude: '__init__.py|apps.py|migrations|backups/'
         args: ["--ignore=E501,F821", "--max-line-length=79"]
