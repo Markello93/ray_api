@@ -21,20 +21,20 @@ class Post(models.Model):
     ]
     theme = models.CharField(choices=CARS, max_length=10, null=True)
     text = models.TextField(
-        verbose_name='Текст поста',
+        verbose_name='Post text',
     )
     pub_date = models.DateTimeField(
-        verbose_name='Дата публикации',
+        verbose_name='Publication date',
         auto_now_add=True,
     )
     author = models.ForeignKey(
         User,
-        verbose_name='Имя автора',
+        verbose_name='Author name',
         on_delete=models.CASCADE,
         related_name='posts',
     )
     image = models.ImageField(
-        verbose_name='Изображение коллекции',
+        verbose_name='Post image',
         default='posts/noimage_detail.png',
         blank=True,
         null=True,
@@ -54,14 +54,14 @@ class Comment(models.Model):
 
     post = models.ForeignKey(
         Post,
-        verbose_name='Ссылка на пост',
+        verbose_name='Linked post',
         on_delete=models.CASCADE,
         related_name='comments',
     )
     text = models.TextField(verbose_name='Текст комментария')
     author = models.ForeignKey(
         User,
-        verbose_name='Имя автора',
+        verbose_name='Author name',
         on_delete=models.CASCADE,
         related_name='comments',
     )

@@ -55,7 +55,11 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class LikedSerializer(serializers.Serializer):
-    emails = serializers.ListField(child=serializers.EmailField())
+    liked_users_emails = serializers.ListField(child=serializers.EmailField())
+
+    def to_representation(self, instance):
+        self.data['liked_users_emails'] = instance
+        return super().to_representation(instance)
 
 
 class LastPostSerializer(serializers.Serializer):

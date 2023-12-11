@@ -38,8 +38,6 @@ services:
       dockerfile: Dockerfile
     container_name: ray_api
     depends_on:
-      #  postgres
-        #  condition: service_healthy
        redis:
          condition: service_healthy
     env_file:
@@ -47,7 +45,6 @@ services:
     volumes:
       - .:/app
     restart: always
-    # tty: true
     ports:
       - "8000:8000"
     networks:
